@@ -1,0 +1,25 @@
+# pi-gen configuration for BSL2026 TVS Kiosk
+# -------------------------------------------
+# Produces a Raspberry Pi OS Lite (Bookworm, 32-bit) image with:
+#   - Auto-starting Python slideshow (images + video)
+#   - Samba share for easy media updates
+#   - HDMI forced on for TV displays
+
+IMG_NAME="bsl2026-kiosk"
+RELEASE="bookworm"
+DEPLOY_COMPRESSION=none
+
+LOCALE_DEFAULT="en_GB.UTF-8"
+TARGET_HOSTNAME="kiosk"
+KEYBOARD_KEYMAP="gb"
+KEYBOARD_LAYOUT="English (UK)"
+TIMEZONE_DEFAULT="Europe/London"
+
+FIRST_USER_NAME="pi"
+# IMPORTANT: Change this default password before deploying!
+FIRST_USER_PASS="raspberry"
+
+ENABLE_SSH=1
+
+# Only build through our custom kiosk stage (skips desktop stages 3-5)
+STAGE_LIST="stage0 stage1 stage2 stage-kiosk"
