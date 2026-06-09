@@ -27,6 +27,9 @@ Run this directly on the Pi after first boot:
 curl -fsSL https://raw.githubusercontent.com/GlennPegden2/bsl2026-kiosk/main/install.sh | sudo bash
 ```
 
+This bootstrap command does not require `git` or a local clone of the repository.
+It downloads the installer files it needs directly from GitHub.
+
 Optional hostname override:
 
 ```bash
@@ -50,6 +53,9 @@ Run on the Pi to remove kiosk configuration:
 ```bash
 curl -fsSL https://raw.githubusercontent.com/GlennPegden2/bsl2026-kiosk/main/reset.sh | sudo bash
 ```
+
+Like the installer, the reset bootstrap downloads the required reset files directly
+from GitHub and does not require a local repo checkout.
 
 Optional flags:
 
