@@ -104,6 +104,9 @@ At loop start, the kiosk also checks this repository for new media files in:
 If a file in that folder does not already exist on the device, it is
 downloaded automatically.
 
+Files that were previously synced from the repo are also updated when the repo
+version changes.
+
 Notes:
 - only supported slideshow file extensions are downloaded
 - checks are rate-limited in the player to avoid GitHub API limits

@@ -31,6 +31,7 @@ FAT_IMPORT_DIR = Path("/boot/firmware/slideshow")
 
 # GitHub API endpoint for repository media folder.
 REPO_MEDIA_API_URL = "https://api.github.com/repos/GlennPegden2/bsl2026-kiosk/contents/kiosk/repo-media"
+REPO_STATE_FILE = MEDIA_DIR / ".repo-media-state.json"
 
 # Minimum seconds between repo checks to avoid API rate limits.
 REPO_SYNC_MIN_INTERVAL = 900
@@ -128,8 +129,30 @@ def sync_from_fat_import_dir() -> None:
         log.info("Imported %d file(s) from FAT folder: %s", imported, FAT_IMPORT_DIR)
 
 
-def _list_repo_media() -> list[tuple[str, str]]:
-    """Return list of (name, download_url) for media files in repo folder."""
+def _load_repo_state() -> dict[str, str]:
+    """Load filename->sha map for media previously synced from repo."""
+    if not REPO_STATE_FILE.is_file():
+        return {}
+
+    try:
+        data = json.loads(REPO_STATE_FILE.read_text(encoding="utf-8"))
+    except Exception:
+        return {}
+
+    if not isinstance(data, dict):
+        return {}
+    return {str(k): str(v) for k, v in data.items()}
+
+
+def _save_repo_state(state: dict[str, str]) -> None:
+    """Persist filename->sha map atomically."""
+    tmp = REPO_STATE_FILE.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, indent=2, sort_keys=True), encoding="utf-8")
+    tmp.replace(REPO_STATE_FILE)
+
+
+def _list_repo_media() -> list[dict]:
+    """Return media entries from repo folder with download metadata."""
     req = Request(REPO_MEDIA_API_URL, headers={"User-Agent": "bsl2026-kiosk"})
     with urlopen(req, timeout=10) as resp:
         data = json.loads(resp.read().decode("utf-8"))
@@ -140,16 +163,18 @@ def _list_repo_media() -> list[tuple[str, str]]:
             continue
         name = item.get("name", "")
         download_url = item.get("download_url", "")
+        sha = item.get("sha", "")
+        size = int(item.get("size", 0))
         if not name or not download_url:
             continue
         if Path(name).suffix.lower() not in (IMAGE_EXTS | VIDEO_EXTS):
             continue
-        results.append((name, download_url))
+        results.append({"name": name, "download_url": download_url, "sha": sha, "size": size})
     return results
 
 
-def sync_missing_from_repo() -> None:
-    """Download any missing media files from repo folder into MEDIA_DIR."""
+def sync_from_repo() -> None:
+    """Download missing repo media and update files previously synced from repo."""
     global _last_repo_sync_ts
 
     now = time.time()
@@ -166,10 +191,41 @@ def sync_missing_from_repo() -> None:
         log.warning("Repo sync failed: %s", exc)
         return
 
+    state = _load_repo_state()
+    state_changed = False
     downloaded = 0
-    for name, url in repo_files:
+    updated = 0
+
+    for item in repo_files:
+        name = item["name"]
+        url = item["download_url"]
+        repo_sha = item.get("sha", "")
+        repo_size = int(item.get("size", 0))
         dst = MEDIA_DIR / name
-        if dst.exists():
+        existed_before = dst.exists()
+        should_download = False
+
+        if not dst.exists():
+            should_download = True
+        else:
+            known_sha = state.get(name)
+            if known_sha and repo_sha and known_sha != repo_sha:
+                should_download = True
+            elif not known_sha and repo_sha:
+                # Adopt existing file as repo-managed only if size matches exactly.
+                try:
+                    if dst.stat().st_size == repo_size:
+                        state[name] = repo_sha
+                        state_changed = True
+                    else:
+                        log.info(
+                            "Repo file %s changed but local file is unmanaged; leaving local copy.",
+                            name,
+                        )
+                except Exception:
+                    pass
+
+        if not should_download:
             continue
 
         tmp = MEDIA_DIR / f".{name}.download"
@@ -178,21 +234,30 @@ def sync_missing_from_repo() -> None:
             with urlopen(req, timeout=20) as resp, tmp.open("wb") as out_f:
                 shutil.copyfileobj(resp, out_f)
             tmp.replace(dst)
-            downloaded += 1
+            if repo_sha:
+                state[name] = repo_sha
+                state_changed = True
+            if existed_before:
+                updated += 1
+            else:
+                downloaded += 1
         except Exception as exc:
             log.warning("Failed repo download for %s: %s", name, exc)
             if tmp.exists():
                 tmp.unlink(missing_ok=True)
 
-    if downloaded:
-        log.info("Downloaded %d new file(s) from repository media.", downloaded)
+    if state_changed:
+        _save_repo_state(state)
+
+    if downloaded or updated:
+        log.info("Repo sync: %d new, %d updated file(s).", downloaded, updated)
 
 
 def sync_media_sources() -> None:
     """Refresh local media from external sources at loop start."""
     MEDIA_DIR.mkdir(parents=True, exist_ok=True)
     sync_from_fat_import_dir()
-    sync_missing_from_repo()
+    sync_from_repo()
 
 
 def show_image(path: Path) -> None:
