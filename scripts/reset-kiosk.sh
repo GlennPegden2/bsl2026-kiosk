@@ -53,6 +53,11 @@ if id -u "${KIOSK_USER}" >/dev/null 2>&1; then
     KIOSK_HOME="$(getent passwd "${KIOSK_USER}" | cut -d: -f6)"
 fi
 
+BOOT_MOUNT="/boot/firmware"
+if [[ ! -d "${BOOT_MOUNT}" ]]; then
+    BOOT_MOUNT="/boot"
+fi
+
 echo "[reset] Stopping Samba services if installed..."
 systemctl disable smbd nmbd >/dev/null 2>&1 || true
 systemctl stop smbd nmbd >/dev/null 2>&1 || true
@@ -103,6 +108,11 @@ fi
 if [[ "${REMOVE_MEDIA}" == "1" && -n "${KIOSK_HOME}" && -d "${KIOSK_HOME}/slideshow" ]]; then
     echo "[reset] Removing media directory ${KIOSK_HOME}/slideshow..."
     rm -rf "${KIOSK_HOME}/slideshow"
+fi
+
+if [[ "${REMOVE_MEDIA}" == "1" && -d "${BOOT_MOUNT}/slideshow" ]]; then
+    echo "[reset] Removing FAT import folder ${BOOT_MOUNT}/slideshow..."
+    rm -rf "${BOOT_MOUNT}/slideshow"
 fi
 
 if [[ "${PURGE_PACKAGES}" == "1" ]]; then

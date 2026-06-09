@@ -71,7 +71,13 @@ if [[ -z "${KIOSK_HOME}" || ! -d "${KIOSK_HOME}" ]]; then
     exit 1
 fi
 
+BOOT_MOUNT="/boot/firmware"
+if [[ ! -d "${BOOT_MOUNT}" ]]; then
+    BOOT_MOUNT="/boot"
+fi
+
 MEDIA_DIR="${KIOSK_HOME}/slideshow"
+FAT_MEDIA_DIR="${BOOT_MOUNT}/slideshow"
 PACKAGES_FILE="${REPO_ROOT}/kiosk/packages.txt"
 FILES_DIR="${REPO_ROOT}/kiosk/files"
 
@@ -94,6 +100,7 @@ install -m 644 "${FILES_DIR}/smb.conf" /etc/samba/smb.conf
 
 # Patch user-specific paths into the copied config files.
 sed -i "s|/home/pi/slideshow|${MEDIA_DIR}|g" /usr/local/bin/slideshow.py
+sed -i "s|/boot/firmware/slideshow|${FAT_MEDIA_DIR}|g" /usr/local/bin/slideshow.py
 sed -i "s|path = /home/pi/slideshow|path = ${MEDIA_DIR}|" /etc/samba/smb.conf
 sed -i "s|force user = pi|force user = ${KIOSK_USER}|" /etc/samba/smb.conf
 
@@ -103,6 +110,14 @@ cat > "${MEDIA_DIR}/README.txt" << 'EOF'
 Drop your .jpg / .png / .mp4 files here.
 EOF
 chown "${KIOSK_USER}:${KIOSK_USER}" "${MEDIA_DIR}/README.txt"
+
+echo "[install] Preparing FAT media import folder at ${FAT_MEDIA_DIR}..."
+install -d -m 755 "${FAT_MEDIA_DIR}"
+cat > "${FAT_MEDIA_DIR}/README.txt" << 'EOF'
+Optional FAT import folder.
+Copy media files here from Windows when the SD card is mounted directly.
+The kiosk imports supported files from this folder at loop start.
+EOF
 
 echo "[install] Configuring tty1 autologin for ${KIOSK_USER}..."
 install -d /etc/systemd/system/getty@tty1.service.d

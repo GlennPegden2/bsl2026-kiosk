@@ -37,6 +37,7 @@ The installer will:
 - install kiosk packages
 - install slideshow and X session scripts
 - configure Samba share at `\\hostname\slideshow`
+- create a FAT boot-partition import folder for easy Windows updates
 - enable tty1 autologin kiosk launch
 - apply HDMI and console blanking tweaks
 
@@ -85,6 +86,28 @@ Copy files into the network share:
 
 Files appear in the next slideshow scan cycle.
 
+### FAT partition updates (SD card in a Windows PC)
+
+When the SD card is inserted directly into a Windows machine, place media in:
+
+- `slideshow` folder on the FAT boot partition
+
+At loop start, the kiosk imports supported files from that FAT folder into its
+runtime media folder automatically.
+
+### Auto-download from repo
+
+At loop start, the kiosk also checks this repository for new media files in:
+
+- `kiosk/repo-media/`
+
+If a file in that folder does not already exist on the device, it is
+downloaded automatically.
+
+Notes:
+- only supported slideshow file extensions are downloaded
+- checks are rate-limited in the player to avoid GitHub API limits
+
 ## Customization
 
 Edit source before running installer:
@@ -114,6 +137,7 @@ bsl2026-kiosk/
          slideshow.py           # Python slideshow app
          xsession.sh            # X startup script
          smb.conf               # Samba config template
+      repo-media/              # optional repo-hosted media auto-download source
    legacy/
       image-build/             # archived pi-gen and custom image build workflow
 ```
