@@ -62,6 +62,14 @@ echo "[reset] Stopping Samba services if installed..."
 systemctl disable smbd nmbd >/dev/null 2>&1 || true
 systemctl stop smbd nmbd >/dev/null 2>&1 || true
 
+if systemctl list-unit-files | grep -q '^lightdm\.service'; then
+    echo "[reset] Re-enabling LightDM display manager..."
+    systemctl enable lightdm >/dev/null 2>&1 || true
+fi
+
+echo "[reset] Restoring default boot target to graphical.target..."
+systemctl set-default graphical.target >/dev/null 2>&1 || true
+
 echo "[reset] Removing kiosk runtime files..."
 rm -f /usr/local/bin/slideshow.py
 rm -f /usr/local/bin/kiosk-xsession.sh

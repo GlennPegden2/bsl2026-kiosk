@@ -42,6 +42,7 @@ The installer will:
 - configure Samba share at `\\hostname\slideshow`
 - create a FAT boot-partition import folder for easy Windows updates
 - enable tty1 autologin kiosk launch
+- disable LightDM/desktop login and set boot target to `multi-user.target`
 - apply HDMI and console blanking tweaks
 
 Reboot when setup finishes.

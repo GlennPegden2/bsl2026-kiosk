@@ -151,6 +151,14 @@ echo "[install] Applying Samba and display settings..."
 systemctl enable smbd nmbd
 systemctl restart smbd nmbd
 
+if systemctl list-unit-files | grep -q '^lightdm\.service'; then
+    echo "[install] Disabling LightDM so tty1 kiosk autologin owns the display..."
+    systemctl disable --now lightdm || true
+fi
+
+echo "[install] Setting default boot target to multi-user.target..."
+systemctl set-default multi-user.target || true
+
 BOOT_CONFIG=""
 if [[ -f /boot/firmware/config.txt ]]; then
     BOOT_CONFIG="/boot/firmware/config.txt"
