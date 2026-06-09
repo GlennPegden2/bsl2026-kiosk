@@ -111,6 +111,28 @@ Drop your .jpg / .png / .mp4 files here.
 EOF
 chown "${KIOSK_USER}:${KIOSK_USER}" "${MEDIA_DIR}/README.txt"
 
+if ! find "${MEDIA_DIR}" -maxdepth 1 -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.bmp' -o -iname '*.gif' -o -iname '*.mp4' -o -iname '*.mkv' -o -iname '*.avi' -o -iname '*.mov' -o -iname '*.webm' -o -iname '*.m4v' \) | grep -q .; then
+    PLACEHOLDER_IMAGE="${MEDIA_DIR}/BSL2026-placeholder.jpg"
+    echo "[install] No media found; creating default placeholder image at ${PLACEHOLDER_IMAGE}..."
+    if MEDIA_DIR="${MEDIA_DIR}" PLACEHOLDER_IMAGE="${PLACEHOLDER_IMAGE}" python3 - <<'PY'
+import os
+from PIL import Image, ImageDraw
+
+path = os.environ["PLACEHOLDER_IMAGE"]
+img = Image.new("RGB", (1280, 720), (14, 54, 84))
+draw = ImageDraw.Draw(img)
+draw.text((48, 48), "BSL 2026 Kiosk", fill=(255, 255, 255))
+draw.text((48, 112), "Drop media into the slideshow SMB share to begin.", fill=(230, 240, 255))
+draw.text((48, 164), "Share: \\\\hostname\\slideshow", fill=(230, 240, 255))
+img.save(path, quality=90)
+PY
+    then
+        chown "${KIOSK_USER}:${KIOSK_USER}" "${PLACEHOLDER_IMAGE}"
+    else
+        echo "[install] Warning: could not create placeholder image (python3-pil unavailable?)." >&2
+    fi
+fi
+
 echo "[install] Preparing FAT media import folder at ${FAT_MEDIA_DIR}..."
 install -d -m 755 "${FAT_MEDIA_DIR}"
 cat > "${FAT_MEDIA_DIR}/README.txt" << 'EOF'

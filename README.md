@@ -41,6 +41,7 @@ The installer will:
 - install slideshow and X session scripts
 - configure Samba share at `\\hostname\slideshow`
 - create a FAT boot-partition import folder for easy Windows updates
+- seed a default placeholder image when media folder is empty
 - enable tty1 autologin kiosk launch
 - force active console to tty1 at boot (no keyboard required)
 - disable LightDM/desktop login and set boot target to `multi-user.target`
