@@ -2,7 +2,7 @@
 # Stage: kiosk
 # Sets up the auto-starting slideshow, Samba share and HDMI settings.
 
-# ── Install application files ──────────────────────────────────────────────────
+# ── Install application files ────────────────────────────────────────────────
 install -m 755 files/slideshow.py   "${ROOTFS_DIR}/usr/local/bin/slideshow.py"
 install -m 755 files/xsession.sh    "${ROOTFS_DIR}/usr/local/bin/kiosk-xsession.sh"
 install -m 644 files/smb.conf       "${ROOTFS_DIR}/etc/samba/smb.conf"
@@ -17,7 +17,7 @@ install -m 644 /dev/null \
 echo 'Drop your .jpg / .png / .mp4 files here.' > \
     "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/slideshow/README.txt"
 
-# ── Autologin to tty1 as pi ───────────────────────────────────────────────────
+# ── Autologin to tty1 as pi ──────────────────────────────────────────────────
 mkdir -p "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d"
 cat > "${ROOTFS_DIR}/etc/systemd/system/getty@tty1.service.d/autologin.conf" << EOF
 [Service]
@@ -36,12 +36,12 @@ fi
 EOF
 chown 1000:1000 "${ROOTFS_DIR}/home/${FIRST_USER_NAME}/.bash_profile"
 
-# ── Enable Samba ──────────────────────────────────────────────────────────────
+# ── Enable Samba ─────────────────────────────────────────────────────────────
 on_chroot << EOF
 systemctl enable smbd nmbd
 EOF
 
-# ── HDMI: force output on, disable overscan, no blanking ──────────────────────
+# ── HDMI: force output on, disable overscan, no blanking ─────────────────────
 # Locate the boot config (path differs between Bullseye and Bookworm)
 if   [ -f "${ROOTFS_DIR}/boot/firmware/config.txt" ]; then
     BOOT_CONFIG="${ROOTFS_DIR}/boot/firmware/config.txt"
@@ -52,7 +52,7 @@ fi
 if [ -n "${BOOT_CONFIG:-}" ]; then
     cat >> "${BOOT_CONFIG}" << 'EOF'
 
-# ── Kiosk display settings ────────────────────────────────────────────────────
+# ── Kiosk display settings ──────────────────────────────────────────────────
 # Force HDMI output even when no display is detected at boot
 hdmi_force_hotplug=1
 # Disable black border compensation (overscan)
@@ -62,7 +62,7 @@ hdmi_pixel_encoding=2
 EOF
 fi
 
-# ── Disable console screen blanking (kernel-level) ────────────────────────────
+# ── Disable console screen blanking (kernel-level) ──────────────────────────
 # Append to kernel command line
 if   [ -f "${ROOTFS_DIR}/boot/firmware/cmdline.txt" ]; then
     CMDLINE="${ROOTFS_DIR}/boot/firmware/cmdline.txt"

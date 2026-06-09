@@ -18,7 +18,7 @@ import time
 from pathlib import Path
 from typing import Optional
 
-# ── Configuration ──────────────────────────────────────────────────────────────
+# â”€â”€ Configuration â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 # Location of the slideshow media folder (also the Samba share target)
 MEDIA_DIR = Path("/home/pi/slideshow")
 
@@ -33,7 +33,7 @@ VIDEO_TIMEOUT = 3600  # 1 hour
 
 IMAGE_EXTS = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".gif"})
 VIDEO_EXTS = frozenset({".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v"})
-# ───────────────────────────────────────────────────────────────────────────────
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 logging.basicConfig(
     level=logging.INFO,
@@ -151,7 +151,7 @@ def main() -> None:
 
         if not files:
             log.warning(
-                "No media files found in %s — retrying in %ds",
+                "No media files found in %s â€” retrying in %ds",
                 MEDIA_DIR, RETRY_DELAY,
             )
             time.sleep(RETRY_DELAY)

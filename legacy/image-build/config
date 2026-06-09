@@ -1,12 +1,12 @@
 # pi-gen configuration for BSL2026 TVS Kiosk
 # -------------------------------------------
-# Produces a Raspberry Pi OS Lite (Bookworm, 32-bit) image with:
+# Produces a Raspberry Pi OS Lite (Trixie, 32-bit) image with:
 #   - Auto-starting Python slideshow (images + video)
 #   - Samba share for easy media updates
 #   - HDMI forced on for TV displays
 
 IMG_NAME="bsl2026-kiosk"
-RELEASE="bookworm"
+RELEASE="trixie"
 DEPLOY_COMPRESSION=none
 
 LOCALE_DEFAULT="en_GB.UTF-8"
