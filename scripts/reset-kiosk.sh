@@ -74,6 +74,10 @@ echo "[reset] Removing kiosk runtime files..."
 rm -f /usr/local/bin/slideshow.py
 rm -f /usr/local/bin/kiosk-xsession.sh
 
+echo "[reset] Removing tty1 force service..."
+systemctl disable kiosk-force-tty1.service >/dev/null 2>&1 || true
+rm -f /etc/systemd/system/kiosk-force-tty1.service
+
 echo "[reset] Restoring tty1 autologin defaults..."
 rm -f /etc/systemd/system/getty@tty1.service.d/autologin.conf
 if [[ -d /etc/systemd/system/getty@tty1.service.d ]]; then

@@ -127,6 +127,22 @@ ExecStart=
 ExecStart=-/sbin/agetty --autologin ${KIOSK_USER} --noclear %I \$TERM
 EOF
 
+echo "[install] Ensuring tty1 is selected automatically on boot..."
+cat > /etc/systemd/system/kiosk-force-tty1.service <<'EOF'
+[Unit]
+Description=Force active virtual console to tty1 for kiosk display
+After=multi-user.target getty@tty1.service
+Wants=getty@tty1.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/chvt 1
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl enable kiosk-force-tty1.service
+
 BASH_PROFILE="${KIOSK_HOME}/.bash_profile"
 if [[ ! -f "${BASH_PROFILE}" ]]; then
     touch "${BASH_PROFILE}"
