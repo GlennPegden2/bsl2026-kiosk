@@ -86,7 +86,7 @@ def show_image(path: Path) -> None:
                 "--fullscreen",
                 "--hide-pointer",
                 "--no-menus",
-                "--zoom", "fill",
+                "--zoom", "max",
                 str(path),
             ],
             env=_display_env(),
