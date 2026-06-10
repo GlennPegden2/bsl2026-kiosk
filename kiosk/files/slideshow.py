@@ -37,7 +37,7 @@ REPO_STATE_FILE = MEDIA_DIR / ".repo-media-state.json"
 REPO_SYNC_MIN_INTERVAL = 900
 
 # How long (seconds) each image is displayed before moving to the next
-IMAGE_DURATION = 10
+IMAGE_DURATION = 20
 
 # How long (seconds) to wait before re-scanning when the folder is empty
 RETRY_DELAY = 30

@@ -103,6 +103,9 @@ sed -i "s|/home/pi/slideshow|${MEDIA_DIR}|g" /usr/local/bin/slideshow.py
 sed -i "s|/boot/firmware/slideshow|${FAT_MEDIA_DIR}|g" /usr/local/bin/slideshow.py
 sed -i "s|path = /home/pi/slideshow|path = ${MEDIA_DIR}|" /etc/samba/smb.conf
 sed -i "s|force user = pi|force user = ${KIOSK_USER}|" /etc/samba/smb.conf
+if [[ -n "${KIOSK_HOSTNAME}" ]]; then
+    sed -i "s|netbios name = KIOSK|netbios name = ${KIOSK_HOSTNAME^^}|" /etc/samba/smb.conf
+fi
 
 echo "[install] Preparing media folder at ${MEDIA_DIR}..."
 install -d -m 775 -o "${KIOSK_USER}" -g "${KIOSK_USER}" "${MEDIA_DIR}"
@@ -236,6 +239,10 @@ if [[ -n "${KIOSK_HOSTNAME}" ]]; then
     fi
     hostnamectl set-hostname "${KIOSK_HOSTNAME}" || true
 fi
+
+echo "[install] Enabling mDNS hostname advertising (avahi-daemon)..."
+systemctl enable avahi-daemon
+systemctl restart avahi-daemon
 
 systemctl daemon-reload
 

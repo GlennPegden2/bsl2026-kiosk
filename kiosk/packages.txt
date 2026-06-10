@@ -5,3 +5,5 @@ feh
 mpv
 samba
 unclutter
+avahi-daemon
+libnss-mdns
