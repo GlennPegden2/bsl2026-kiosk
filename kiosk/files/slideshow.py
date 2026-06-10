@@ -44,6 +44,7 @@ RETRY_DELAY = 30
 
 # Safety cap: maximum seconds allowed for a single video before it is skipped
 VIDEO_TIMEOUT = 3600  # 1 hour
+LOCK_FILE = Path("/tmp/bsl2026-slideshow.lock")
 
 IMAGE_EXTS = frozenset({".jpg", ".jpeg", ".png", ".bmp", ".gif"})
 VIDEO_EXTS = frozenset({".mp4", ".mkv", ".avi", ".mov", ".webm", ".m4v"})
@@ -58,13 +59,64 @@ log = logging.getLogger(__name__)
 
 # Module-level reference so signal handler can clean up the active child process
 _current_proc: Optional[subprocess.Popen] = None
+_lock_fd: Optional[int] = None
 _last_repo_sync_ts = 0.0
+
+
+def _acquire_single_instance_lock() -> bool:
+    """Ensure only one slideshow process runs at a time."""
+    global _lock_fd
+
+    for _ in range(2):
+        try:
+            _lock_fd = os.open(str(LOCK_FILE), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(_lock_fd, f"{os.getpid()}\n".encode("utf-8"))
+            return True
+        except FileExistsError:
+            try:
+                stale_pid = int(LOCK_FILE.read_text(encoding="utf-8").strip() or "0")
+            except Exception:
+                stale_pid = 0
+
+            # If the recorded PID is not running, remove stale lock and retry once.
+            if stale_pid <= 0 or not Path(f"/proc/{stale_pid}").exists():
+                try:
+                    LOCK_FILE.unlink(missing_ok=True)
+                except Exception:
+                    pass
+                continue
+
+            log.warning("Another slideshow process is already running (pid %d); exiting.", stale_pid)
+            return False
+        except Exception as exc:
+            # Fail open if locking is unavailable; playback can still proceed.
+            log.warning("Unable to acquire slideshow lock: %s", exc)
+            return True
+
+    log.warning("Another slideshow process is already running; exiting.")
+    return False
+
+
+def _release_single_instance_lock() -> None:
+    global _lock_fd
+    if _lock_fd is None:
+        return
+    try:
+        os.close(_lock_fd)
+    except Exception:
+        pass
+    try:
+        LOCK_FILE.unlink(missing_ok=True)
+    except Exception:
+        pass
+    _lock_fd = None
 
 
 def _handle_signal(signum, frame) -> None:
     """Terminate any running child process cleanly on SIGTERM / SIGINT."""
     if _current_proc and _current_proc.poll() is None:
         _current_proc.terminate()
+    _release_single_instance_lock()
     sys.exit(0)
 
 
@@ -314,8 +366,9 @@ def play_video(path: Path) -> None:
         _current_proc.wait(timeout=VIDEO_TIMEOUT)
     except subprocess.TimeoutExpired:
         log.warning("Video exceeded timeout (%ds), skipping: %s", VIDEO_TIMEOUT, path.name)
-        _current_proc.kill()
-        _current_proc.wait()
+        if _current_proc is not None:
+            _current_proc.kill()
+            _current_proc.wait()
     except Exception as exc:
         log.error("mpv failed for %s: %s", path.name, exc)
     finally:
@@ -329,30 +382,36 @@ def play_video(path: Path) -> None:
 
 
 def main() -> None:
-    log.info("Kiosk slideshow starting. Media dir: %s", MEDIA_DIR)
-    log.info("FAT import dir: %s", FAT_IMPORT_DIR)
+    if not _acquire_single_instance_lock():
+        return
 
-    while True:
-        sync_media_sources()
-        files = list_media()
+    try:
+        log.info("Kiosk slideshow starting. Media dir: %s", MEDIA_DIR)
+        log.info("FAT import dir: %s", FAT_IMPORT_DIR)
 
-        if not files:
-            log.warning(
-                "No media files found in %s â€” retrying in %ds",
-                MEDIA_DIR, RETRY_DELAY,
-            )
-            time.sleep(RETRY_DELAY)
-            continue
+        while True:
+            sync_media_sources()
+            files = list_media()
 
-        log.info("Found %d file(s). Starting loop.", len(files))
+            if not files:
+                log.warning(
+                    "No media files found in %s â€” retrying in %ds",
+                    MEDIA_DIR, RETRY_DELAY,
+                )
+                time.sleep(RETRY_DELAY)
+                continue
 
-        for path in files:
-            ext = path.suffix.lower()
-            if ext in IMAGE_EXTS:
-                show_image(path)
-            elif ext in VIDEO_EXTS:
-                play_video(path)
-        # After one full pass, re-scan so newly added files are picked up
+            log.info("Found %d file(s). Starting loop.", len(files))
+
+            for path in files:
+                ext = path.suffix.lower()
+                if ext in IMAGE_EXTS:
+                    show_image(path)
+                elif ext in VIDEO_EXTS:
+                    play_video(path)
+            # After one full pass, re-scan so newly added files are picked up
+    finally:
+        _release_single_instance_lock()
 
 
 if __name__ == "__main__":
